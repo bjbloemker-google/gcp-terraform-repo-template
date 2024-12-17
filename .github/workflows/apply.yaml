@@ -1,0 +1,55 @@
+name: 'terraform apply'
+
+on:
+  pull_request:
+    branches:
+      - main
+    types: [closed]
+
+env:
+  TERRAFORM_VERSION: '1.10.2'
+  TERRAFORM_VAR_FILE: 'terraform.auto.tfvars'
+  TF_LOG: INFO
+  
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  push_checks:
+    if: github.event.pull_request.merged == true
+    name: 'Apply Terraform'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      # WIF
+      - name: GCP Workload Identity Federation connection
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: ${{ env.WIF_PROVIDER }}
+          service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
+
+      - name: setup terraform
+        uses: hashicorp/setup-terraform@v3.0.0
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+
+      - name: terraform init
+        id: init
+        run: |
+          terraform init -backend-config="bucket=${{ env.TERRAFORM_STATE_FILE_BUCKET }}" -backend-config="prefix=${{ github.repository }}/${{ github.ref_name || 'main' }}" 
+
+      - name: terraform plan
+        id: plan
+        run: |
+          terraform plan -var-file=${{ env.TERRAFORM_VAR_FILE }} -out=tfplan
+
+      - name: terraform apply
+        run: terraform apply tfplan 
+      
+
+
+      
