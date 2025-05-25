@@ -6,11 +6,11 @@ on:
       - main
 
 env:
-  TERRAFORM_STATE_FILE_BUCKET: ''
-  WIF_PROVIDER: '' # Workload Identity Federation Provider
-  WIF_SERVICE_ACCOUNT: '' # Deployment Service Account
+  TERRAFORM_STATE_FILE_BUCKET: ${{ secrets.TERRAFORM_STATE_FILE_BUCKET }}
+  WIF_PROVIDER: ${{ secrets.WIF_PROVIDER }} # Workload Identity Federation Provider
+  WIF_SERVICE_ACCOUNT: ${{ secrets.WIF_SERVICE_ACCOUNT }} # Deployment Service Account
   
-  TERRAFORM_VERSION: '1.12.0'
+  TERRAFORM_VERSION: '1.12.0' # This should ideally be updated, e.g., to '1.8.0'
   TERRAFORM_VAR_FILE: 'terraform.auto.tfvars' # Terraform variable file to look for
 
   TF_LOG: INFO
