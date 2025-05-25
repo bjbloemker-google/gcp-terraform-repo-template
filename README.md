@@ -1,4 +1,4 @@
-# gcp-terraform-template
+# gcp-terraform-repo-template
 
 This repo exist as a template to serve as the base of your application. It contains the required files for a GCP terraform project and associated Github actions for deployment using Workload Identity Federation.
 
