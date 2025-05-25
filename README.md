@@ -92,6 +92,94 @@ Ensure these are configured in your repository settings for the workflows:
 
 The workflows also use environment variables like `TERRAFORM_VERSION` (which you can update in the YAML files) and `TERRAFORM_VAR_FILE`.
 
+## Using Reusable Terraform Workflows (Advanced)
+
+The `plan.yaml` and `apply.yaml` workflows in this repository have been converted into reusable workflows. This means you can call them from other repositories to standardize your Terraform CI/CD processes. Below is a guide on how to use them.
+
+You can find complete examples of how to call these workflows in .github/workflows/example-usage-plan.yaml and .github/workflows/example-usage-apply.yaml.
+
+### Reusable Plan Workflow: `.github/workflows/plan.yaml`
+
+**Purpose:** Initializes Terraform, sets up GCP authentication via WIF, and generates a Terraform execution plan.
+
+**Usage:**
+```yaml
+jobs:
+  terraform_plan:
+    name: 'Terraform Plan'
+    uses: ./.github/workflows/plan.yaml@main # Replace main with your desired ref (branch, tag, SHA)
+    with:
+      # terraform_version: '1.12.0'           # Optional, Default: '1.12.0'
+      # working_directory: './terraform/projectA' # Optional, Default: '.'
+      # terraform_var_file: 'dev.tfvars'      # Optional, Default: 'terraform.auto.tfvars'
+      gcp_wif_provider: ${{ secrets.GCP_WIF_PROVIDER }} # Required
+      gcp_wif_service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }} # Required
+      gcp_terraform_state_bucket: ${{ secrets.GCP_TERRAFORM_STATE_BUCKET }} # Required
+    secrets: inherit # Or pass secrets explicitly
+      # GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+      # GCP_WIF_SERVICE_ACCOUNT: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+      # GCP_TERRAFORM_STATE_BUCKET: ${{ secrets.GCP_TERRAFORM_STATE_BUCKET }}
+```
+
+**Inputs:**
+
+| Input                         | Type   | Description                                       | Default                  | Required |
+| ----------------------------- | ------ | ------------------------------------------------- | ------------------------ | -------- |
+| `terraform_version`           | string | The version of Terraform to use.                  | `1.12.0`                 | No       |
+| `working_directory`           | string | The directory for Terraform commands.             | `.`                      | No       |
+| `terraform_var_file`          | string | Name of the Terraform variable file.            | `terraform.auto.tfvars`  | No       |
+| `gcp_wif_provider`            | string | GCP Workload Identity Federation Provider URI.    |                          | Yes      |
+| `gcp_wif_service_account`     | string | GCP Service Account email for WIF.                |                          | Yes      |
+| `gcp_terraform_state_bucket`  | string | GCS bucket name for Terraform state.              |                          | Yes      |
+
+**Secrets:**
+
+The workflow expects the following secrets to be available to the caller, either via `secrets: inherit` or by passing them explicitly:
+- `gcp_wif_provider`: The GCP WIF Provider URI.
+- `gcp_wif_service_account`: The GCP Service Account email.
+- `gcp_terraform_state_bucket`: The GCS bucket for Terraform state.
+(Note: While these are passed as `inputs` to the reusable workflow, their values will typically come from the calling workflow's secrets.)
+
+### Reusable Apply Workflow: `.github/workflows/apply.yaml`
+
+**Purpose:** Initializes Terraform, sets up GCP authentication via WIF, and applies the Terraform configuration.
+
+**Usage:**
+```yaml
+jobs:
+  terraform_apply:
+    name: 'Terraform Apply'
+    needs: [terraform_plan] # Example: ensure plan runs first
+    if: github.ref == 'refs/heads/main' # Example: only run on pushes to main in the calling workflow
+    uses: ./.github/workflows/apply.yaml@main # Replace main with your desired ref
+    with:
+      # terraform_version: '1.12.0'           # Optional, Default: '1.12.0'
+      # working_directory: './terraform/projectA' # Optional, Default: '.'
+      # terraform_var_file: 'dev.tfvars'      # Optional, Default: 'terraform.auto.tfvars'
+      gcp_wif_provider: ${{ secrets.GCP_WIF_PROVIDER }} # Required
+      gcp_wif_service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }} # Required
+      gcp_terraform_state_bucket: ${{ secrets.GCP_TERRAFORM_STATE_BUCKET }} # Required
+    secrets: inherit
+```
+
+**Inputs:**
+
+| Input                         | Type   | Description                                       | Default                  | Required |
+| ----------------------------- | ------ | ------------------------------------------------- | ------------------------ | -------- |
+| `terraform_version`           | string | The version of Terraform to use.                  | `1.12.0`                 | No       |
+| `working_directory`           | string | The directory for Terraform commands.             | `.`                      | No       |
+| `terraform_var_file`          | string | Name of the Terraform variable file.            | `terraform.auto.tfvars`  | No       |
+| `gcp_wif_provider`            | string | GCP Workload Identity Federation Provider URI.    |                          | Yes      |
+| `gcp_wif_service_account`     | string | GCP Service Account email for WIF.                |                          | Yes      |
+| `gcp_terraform_state_bucket`  | string | GCS bucket name for Terraform state.              |                          | Yes      |
+
+**Secrets:**
+The workflow expects the following secrets to be available to the caller, either via `secrets: inherit` or by passing them explicitly:
+- `gcp_wif_provider`: The GCP WIF Provider URI.
+- `gcp_wif_service_account`: The GCP Service Account email.
+- `gcp_terraform_state_bucket`: The GCS bucket for Terraform state.
+(Note: While these are passed as `inputs` to the reusable workflow, their values will typically come from the calling workflow's secrets.)
+
 ## GCP Authentication: Workload Identity Federation
 
 This template uses Google Cloud's Workload Identity Federation (WIF) for secure, passwordless authentication from GitHub Actions to GCP.
