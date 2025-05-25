@@ -1,14 +1,18 @@
 name: 'terraform apply'
 
 on:
-  pull_request:
-    branches:
-      - main
-    types: [closed]
+  push:
+    tags:
+      - '*'
 
 env:
-  TERRAFORM_VERSION: '1.10.2'
-  TERRAFORM_VAR_FILE: 'terraform.auto.tfvars'
+  TERRAFORM_STATE_FILE_BUCKET: ''
+  WIF_PROVIDER: '' # Workload Identity Federation Provider
+  WIF_SERVICE_ACCOUNT: '' # Deployment Service Account
+  
+  TERRAFORM_VERSION: '1.12.0'
+  TERRAFORM_VAR_FILE: 'terraform.auto.tfvars' # Terraform variable file to look for
+
   TF_LOG: INFO
   
 permissions:
@@ -16,39 +20,35 @@ permissions:
   id-token: write
 
 jobs:
-  push_checks:
-    if: github.event.pull_request.merged == true
-    name: 'Apply Terraform'
+  terraform_apply:
+    name: 'terraform apply'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.2
+        uses: actions/checkout@v4
 
       # WIF
-      - name: GCP Workload Identity Federation connection
+      - name: GCP Workload Identity Federation Connection
         uses: 'google-github-actions/auth@v2'
         with:
           workload_identity_provider: ${{ env.WIF_PROVIDER }}
           service_account: ${{ env.WIF_SERVICE_ACCOUNT }}
 
-      - name: setup terraform
-        uses: hashicorp/setup-terraform@v3.0.0
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
         with:
           terraform_version: ${{ env.TERRAFORM_VERSION }}
 
-      - name: terraform init
+      - name: Terraform Init
         id: init
+        # working-directory: ./environments/prod
         run: |
-          terraform init -backend-config="bucket=${{ env.TERRAFORM_STATE_FILE_BUCKET }}" -backend-config="prefix=${{ github.repository }}/${{ github.ref_name || 'main' }}" 
+          terraform init -backend-config="bucket=${{ env.TERRAFORM_STATE_FILE_BUCKET }}"
 
-      - name: terraform plan
-        id: plan
-        run: |
-          terraform plan -var-file=${{ env.TERRAFORM_VAR_FILE }} -out=tfplan
-
-      - name: terraform apply
-        run: terraform apply tfplan 
+      - name: Terraform Apply
+        # working-directory: ./environments/prod
+        run: terraform apply -var-file=${{ env.TERRAFORM_VAR_FILE }} -auto-approve
       
 
 
