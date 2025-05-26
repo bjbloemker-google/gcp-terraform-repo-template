@@ -7,7 +7,7 @@ on:
 jobs:
   terraform_plan:
     name: 'Terraform Plan Example'
-    uses: bjbloemker-google/gcp-terraform-action-workflows/.github/workflows/plan.yaml@feat/reusable-terraform-workflows # Adjust ref as needed, e.g., @main or @v1.0.0
+    uses: bjbloemker-google/gcp-terraform-action-workflows/.github/workflows/plan.yaml@main # Adjust ref as needed, e.g., @main or @v1.0.0
     with:
       # Optional Inputs (examples show defaults or common usage):
       # terraform_version: '1.12.0' # Default: '1.12.0'
