@@ -2,6 +2,7 @@
 
 Welcome! This repository serves as a comprehensive template to kickstart your Google Cloud Platform (GCP) infrastructure projects using Terraform. It includes pre-configured GitHub Actions workflows for automated deployment leveraging Workload Identity Federation for secure, keyless authentication.
 
+
 ## Quickstart
 
 Get started in just a few steps:
